@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+/* ===== ヘッダー ===== */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1a237e;
+  padding: 12px 15px;
+  color: white;
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
+  stroke: white;
+  fill: none;
+  stroke-width: 2;
+  cursor: pointer;
+}
+
+.right {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+/* ===== メニュー ===== */
+.menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 250px;
+  height: 100%;
+  background: #222;
+  color: white;
+  padding: 20px;
+  transform: translateX(100%);
+  transition: transform 0.3s;
+  z-index: 1001;
+}
+.menu.open { transform: translateX(0); }
+
+.overlay {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: none;
+}
+.overlay.show { display: block; }
+
+/* ===== 検索 ===== */
+.search-modal {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: white;
+  display: none;
+  padding: 20px;
+}
+.search-modal.show { display: block; }
+
+/* ===== 画像 ===== */
+.main-image {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+}
+
+/* ===== 記事 ===== */
+.articles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 10px;
+}
+
+.article {
+  background: #eee;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.article img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+
+.article h3 {
+  font-size: 14px;
+  margin: 8px;
+}
+
+/* ===== コメント ===== */
+.comment-section {
+  padding: 15px;
+}
+
+.comment {
+  background: #f1f1f1;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 6px;
+}
+
+.comment button {
+  margin-top: 5px;
+  cursor: pointer;
+}
+  
+/* ===== ゲーム ===== */
+#game {
+  display: block;
+  margin: 30px auto;
+  background: #111;
+  border: 2px solid #333;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div>塩と銅</div>
+  <div class="right">
+    <svg class="icon" viewBox="0 0 24 24" onclick="search.classList.add('show')">
+      <circle cx="11" cy="11" r="7"/>
+      <line x1="16" y1="16" x2="21" y2="21"/>
+    </svg>
+    <svg class="icon" viewBox="0 0 24 24" onclick="menu.classList.add('open');overlay.classList.add('show')">
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </div>
+</header>
+
+<div id="overlay" class="overlay" onclick="menu.classList.remove('open');overlay.classList.remove('show')"></div>
+
+<div id="menu" class="menu">
+  <p>ホーム</p>
+  <p>プロフィール</p>
+</div>
+
+<div id="search" class="search-modal">
+  <input type="text" placeholder="検索...">
+  <br><br>
+  <button onclick="search.classList.remove('show')">閉じる</button>
+</div>
+
+<img src="https://picsum.photos/1200/600" class="main-image">
+
+<div class="articles">
+  <div class="article"><img src="https://picsum.photos/300/200?1"><h3>記事1</h3></div>
+  <div class="article"><img src="https://picsum.photos/300/200?2"><h3>記事2</h3></div>
+  <div class="article"><img src="https://picsum.photos/300/200?3"><h3>記事3</h3></div>
+  <div class="article"><img src="https://picsum.photos/300/200?4"><h3>記事4</h3></div>
+</div>
+
+<!-- コメント -->
+<div class="comment-section">
+  <textarea id="commentInput"></textarea>
+  <button onclick="postComment()">投稿</button>
+  <div id="commentList"></div>
+</div>
+
+<!-- 🔥 ゲーム -->
+<canvas id="game" width="500" height="300"></canvas>
+
+<script>
+// ===== コメント =====
+function postComment(){
+  let input = document.getElementById("commentInput");
+  let text = input.value.trim();
+  if(!text)return;
+
+  let comments = JSON.parse(localStorage.getItem("comments")||"[]");
+  comments.push({text, poop: 0});
+  localStorage.setItem("comments",JSON.stringify(comments));
+  input.value="";
+  loadComments();
+}
+
+function loadComments(){
+  let list=document.getElementById("commentList");
+  list.innerHTML="";
+  let comments=JSON.parse(localStorage.getItem("comments")||"[]");
+
+  comments = comments.map(c => ({
+    text: c.text,
+    poop: c.poop || 0
+  }));
+
+  comments.forEach((c,index)=>{
+    let div=document.createElement("div");
+    div.className="comment";
+
+    let text=document.createElement("div");
+    text.textContent=c.text;
+
+    let btn=document.createElement("button");
+    btn.textContent="💩 " + c.poop;
+
+    btn.onclick=()=>{
+      comments[index].poop++;
+      localStorage.setItem("comments",JSON.stringify(comments));
+      loadComments();
+    };
+
+    div.appendChild(text);
+    div.appendChild(btn);
+    list.appendChild(div);
+  });
+}
+loadComments();
+
+// ===== ゲーム =====
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+function player(x,color){
+  return {x,y:200,vx:0,vy:0,hp:0,color,onGround:false};
+}
+
+let p1=player(100,"cyan");
+let p2=player(350,"red");
+
+let keys={};
+onkeydown=e=>keys[e.key]=true;
+onkeyup=e=>keys[e.key]=false;
+
+const g=0.5,floor=250;
+
+function update(p,l,r,j,a,e){
+  if(keys[l])p.vx=-3;
+  else if(keys[r])p.vx=3;
+  else p.vx=0;
+
+  if(keys[j]&&p.onGround){p.vy=-10;p.onGround=false;}
+
+  p.vy+=g;
+  p.x+=p.vx;
+  p.y+=p.vy;
+
+  if(p.y>floor){p.y=floor;p.vy=0;p.onGround=true;}
+
+  if(keys[a]){
+    if(Math.abs(p.x-e.x)<30){
+      e.hp++;
+      let d=e.x>p.x?1:-1;
+      e.vx=d*(3+e.hp*0.2);
+      e.vy=-5;
+    }
+  }
+
+  if(p.y>300)reset();
+}
+
+function draw(){
+  ctx.clearRect(0,0,500,300);
+
+  ctx.fillStyle="#444";
+  ctx.fillRect(0,270,500,30);
+
+  ctx.fillStyle=p1.color;
+  ctx.fillRect(p1.x,p1.y,20,20);
+
+  ctx.fillStyle=p2.color;
+  ctx.fillRect(p2.x,p2.y,20,20);
+
+  ctx.fillStyle="white";
+  ctx.fillText("P1:"+p1.hp+"%",10,20);
+  ctx.fillText("P2:"+p2.hp+"%",400,20);
+}
+
+function reset(){
+  p1=player(100,"cyan");
+  p2=player(350,"red");
+}
+
+function loop(){
+  update(p1,"a","d","w","f",p2);
+  update(p2,"ArrowLeft","ArrowRight","ArrowUp","/",p1);
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>
