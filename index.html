@@ -12,41 +12,6 @@ header {
   display:flex; justify-content:space-between; align-items:center;
   background:#1a237e; padding:12px; color:white;
 }
-.icon { width:22px; stroke:white; fill:none; stroke-width:2; cursor:pointer; }
-.right { display:flex; gap:15px; }
-
-/* メニュー */
-.menu {
-  position:fixed; top:0; right:0; width:250px; height:100%;
-  background:#222; color:white; padding:20px;
-  transform:translateX(100%); transition:0.3s;
-}
-.menu.open { transform:translateX(0); }
-
-.overlay {
-  position:fixed; width:100%; height:100%;
-  background:rgba(0,0,0,0.5); display:none;
-}
-.overlay.show { display:block; }
-
-/* 検索 */
-.search-modal {
-  position:fixed; width:100%; height:100%;
-  background:white; display:none; padding:20px;
-}
-.search-modal.show { display:block; }
-
-/* 画像 */
-.main-image { width:100%; height:300px; object-fit:cover; }
-
-/* 記事 */
-.articles {
-  display:grid; grid-template-columns:1fr 1fr;
-  gap:10px; padding:10px;
-}
-.article { background:#eee; border-radius:8px; overflow:hidden; }
-.article img { width:100%; height:120px; object-fit:cover; }
-.article h3 { margin:8px; }
 
 /* コメント */
 .comment-section { padding:15px; }
@@ -55,10 +20,15 @@ header {
   margin-top:10px; border-radius:6px;
 }
 
-/* ゲーム */
-#game {
-  display:block; margin:30px auto;
-  background:#111; border:2px solid #333;
+/* クッキー */
+.cookie-box {
+  text-align:center;
+  margin-top:20px;
+}
+.cookie-btn {
+  padding:10px 20px;
+  font-size:16px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -74,6 +44,12 @@ header {
   <textarea id="commentInput"></textarea><br>
   <button onclick="postComment()">投稿</button>
   <div id="commentList"></div>
+</div>
+
+<!-- クッキー -->
+<div class="cookie-box">
+  <h2>🍪 クッキー: <span id="cookieCount">0</span></h2>
+  <button class="cookie-btn" onclick="addCookie()">クッキーを焼く🍪</button>
 </div>
 
 <!-- Firebase -->
@@ -94,7 +70,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ===== 投稿 =====
+// ===== コメント投稿 =====
 function postComment(){
   let input=document.getElementById("commentInput");
   let text=input.value.trim();
@@ -102,16 +78,16 @@ function postComment(){
 
   db.collection("comments").add({
     text:text,
-    poop:0,
     time:Date.now()
   });
 
   input.value="";
 }
 
-// ===== 表示（超シンプル版） =====
+// ===== コメント表示 =====
 function loadComments(){
   db.collection("comments")
+  .orderBy("time","desc")
   .onSnapshot(snapshot=>{
     let list=document.getElementById("commentList");
     list.innerHTML="";
@@ -128,6 +104,30 @@ function loadComments(){
   });
 }
 loadComments();
+
+// ===== クッキーカウンター =====
+const cookieRef = db.collection("counts").doc("cookie");
+
+// 初期作成（なければ）
+cookieRef.get().then(doc=>{
+  if(!doc.exists){
+    cookieRef.set({count:0});
+  }
+});
+
+// 増やす
+function addCookie(){
+  cookieRef.update({
+    count: firebase.firestore.FieldValue.increment(1)
+  });
+}
+
+// リアルタイム表示
+cookieRef.onSnapshot(doc=>{
+  if(doc.exists){
+    document.getElementById("cookieCount").textContent = doc.data().count;
+  }
+});
 </script>
 
 </body>
