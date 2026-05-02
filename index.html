@@ -30,6 +30,13 @@ header {
   font-size:16px;
   cursor:pointer;
 }
+
+/* クッキー表示 */
+#cookieVisual {
+  margin-top:10px;
+  font-size:24px;
+  word-wrap: break-word;
+}
 </style>
 </head>
 
@@ -50,6 +57,9 @@ header {
 <div class="cookie-box">
   <h2>🍪 クッキー: <span id="cookieCount">0</span></h2>
   <button class="cookie-btn" onclick="addCookie()">クッキーを焼く🍪</button>
+
+  <!-- 絵文字表示 -->
+  <div id="cookieVisual"></div>
 </div>
 
 <!-- Firebase -->
@@ -108,7 +118,7 @@ loadComments();
 // ===== クッキーカウンター =====
 const cookieRef = db.collection("counts").doc("cookie");
 
-// 初期作成（なければ）
+// 初期作成
 cookieRef.get().then(doc=>{
   if(!doc.exists){
     cookieRef.set({count:0});
@@ -122,10 +132,26 @@ function addCookie(){
   });
 }
 
-// リアルタイム表示
+// 🍪表示（制限なし）
+function renderCookies(count){
+  let box = document.getElementById("cookieVisual");
+  box.innerHTML = "";
+
+  for(let i=0; i<count; i++){
+    let span = document.createElement("span");
+    span.textContent = "🍪";
+    box.appendChild(span);
+  }
+}
+
+// リアルタイム更新
 cookieRef.onSnapshot(doc=>{
   if(doc.exists){
-    document.getElementById("cookieCount").textContent = doc.data().count;
+    let count = doc.data().count;
+
+    document.getElementById("cookieCount").textContent = count;
+
+    renderCookies(count);
   }
 });
 </script>
