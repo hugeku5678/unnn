@@ -6,24 +6,37 @@
 
 <style>
 body { margin:0; font-family:Arial; }
+
 header {
   display:flex; justify-content:space-between; align-items:center;
   background:#1a237e; padding:12px; color:white;
 }
+
 .comment-section { padding:15px; }
-.comment {
-  background:#f1f1f1; padding:10px;
-  margin-top:10px; border-radius:6px;
+
+textarea {
+  width:100%;
+  height:60px;
 }
+
+.comment {
+  background:#f1f1f1;
+  padding:10px;
+  margin-top:10px;
+  border-radius:6px;
+}
+
 .cookie-box {
   text-align:center;
   margin-top:20px;
 }
+
 .cookie-btn {
   padding:10px 20px;
   font-size:16px;
   cursor:pointer;
 }
+
 #cookieVisual {
   margin-top:10px;
   font-size:24px;
@@ -39,7 +52,7 @@ header {
 </header>
 
 <div class="comment-section">
-  <textarea id="commentInput"></textarea><br>
+  <textarea id="commentInput" placeholder="コメントを書く"></textarea><br>
   <button onclick="postComment()">投稿</button>
   <div id="commentList"></div>
 </div>
@@ -54,6 +67,7 @@ header {
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <script>
+// ===== Firebase設定（ここを書き換える）=====
 const firebaseConfig = {
   apiKey: "AIzaSyXXXX",
   authDomain: "XXXX.firebaseapp.com",
@@ -65,50 +79,52 @@ const db = firebase.firestore();
 
 // ===== コメント投稿 =====
 function postComment(){
-  let input=document.getElementById("commentInput");
-  let text=input.value.trim();
-  if(!text)return;
+  let input = document.getElementById("commentInput");
+  let text = input.value.trim();
+  if(!text) return;
 
   db.collection("comments").add({
-    text:text,
-    time:Date.now(),
-    report:0
+    text: text,
+    time: Date.now(),
+    report: 0
   });
 
-  input.value="";
+  input.value = "";
 }
 
-// ===== コメント表示 =====
+// ===== コメント表示（リアルタイム共有）=====
 function loadComments(){
   db.collection("comments")
   .orderBy("time","desc")
-  .onSnapshot(snapshot=>{
-    let list=document.getElementById("commentList");
-    list.innerHTML="";
+  .onSnapshot(snapshot => {
 
-    snapshot.forEach(doc=>{
-      let c=doc.data();
+    let list = document.getElementById("commentList");
+    list.innerHTML = "";
 
-      let div=document.createElement("div");
-      div.className="comment";
+    snapshot.forEach(doc => {
+      let c = doc.data();
+
+      let div = document.createElement("div");
+      div.className = "comment";
 
       let text = document.createElement("div");
       text.textContent = c.text;
       div.appendChild(text);
 
+      // ☺️があるコメントだけ追放
       if(c.text.includes("☺️")){
         let btn = document.createElement("button");
         btn.textContent = "追放 (" + (c.report || 0) + "/10)";
 
-        btn.onclick = ()=>{
+        btn.onclick = () => {
           let newCount = (c.report || 0) + 1;
 
           if(newCount >= 10){
             db.collection("comments").doc(doc.id).delete();
           }else{
-            db.collection("comments").doc(doc.id).update({
+            db.collection("comments").doc(doc.id).set({
               report: newCount
-            });
+            }, { merge: true });
           }
         };
 
@@ -117,44 +133,58 @@ function loadComments(){
 
       list.appendChild(div);
     });
+
+  }, error => {
+    console.error("コメント取得エラー:", error);
   });
 }
 loadComments();
 
-// ===== クッキー =====
+// ===== クッキー共有（完全安定版）=====
 const cookieRef = db.collection("counts").doc("cookie");
 
-// ★ 強制復旧（なければ作る）
-cookieRef.get().then(doc=>{
-  if(!doc.exists){
-    cookieRef.set({count:0});
-  }
-});
-
+// クッキー追加（存在しなくてもOK）
 function addCookie(){
-  cookieRef.update({
+  cookieRef.set({
     count: firebase.firestore.FieldValue.increment(1)
-  });
+  }, { merge: true });
 }
 
+// クッキー描画
 function renderCookies(count){
   let box = document.getElementById("cookieVisual");
   box.innerHTML = "";
 
-  for(let i=0; i<count; i++){
+  let max = Math.min(count, 100); // 表示制限
+
+  for(let i=0; i<max; i++){
     let span = document.createElement("span");
     span.textContent = "🍪";
     box.appendChild(span);
   }
+
+  if(count > 100){
+    let more = document.createElement("div");
+    more.textContent = "他 " + (count - 100) + " 個...";
+    box.appendChild(more);
+  }
 }
 
+// リアルタイム同期
 cookieRef.onSnapshot(doc=>{
-  if(doc.exists){
-    let count = doc.data().count;
-    document.getElementById("cookieCount").textContent = count;
-    renderCookies(count);
+  let count = 0;
+
+  if(doc.exists && doc.data().count){
+    count = doc.data().count;
   }
+
+  document.getElementById("cookieCount").textContent = count;
+  renderCookies(count);
+
+}, error => {
+  console.error("クッキー取得エラー:", error);
 });
+
 </script>
 
 </body>
