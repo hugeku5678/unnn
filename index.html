@@ -67,11 +67,11 @@ textarea {
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <script>
-// ===== Firebase設定（ここを書き換える）=====
+// ===== Firebase設定（必ず自分のにする）=====
 const firebaseConfig = {
-  apiKey: "AIzaSyXXXX",
-  authDomain: "XXXX.firebaseapp.com",
-  projectId: "XXXX"
+  apiKey: "ここに貼る",
+  authDomain: "ここに貼る",
+  projectId: "ここに貼る"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -87,12 +87,17 @@ function postComment(){
     text: text,
     time: Date.now(),
     report: 0
+  })
+  .then(() => {
+    input.value = "";
+  })
+  .catch(err => {
+    alert("投稿失敗: " + err.message);
+    console.error(err);
   });
-
-  input.value = "";
 }
 
-// ===== コメント表示（リアルタイム共有）=====
+// ===== コメント表示（リアルタイム）=====
 function loadComments(){
   db.collection("comments")
   .orderBy("time","desc")
@@ -111,7 +116,7 @@ function loadComments(){
       text.textContent = c.text;
       div.appendChild(text);
 
-      // ☺️があるコメントだけ追放
+      // ☺️コメントのみ通報
       if(c.text.includes("☺️")){
         let btn = document.createElement("button");
         btn.textContent = "追放 (" + (c.report || 0) + "/10)";
@@ -122,9 +127,9 @@ function loadComments(){
           if(newCount >= 10){
             db.collection("comments").doc(doc.id).delete();
           }else{
-            db.collection("comments").doc(doc.id).set({
+            db.collection("comments").doc(doc.id).update({
               report: newCount
-            }, { merge: true });
+            });
           }
         };
 
@@ -135,19 +140,24 @@ function loadComments(){
     });
 
   }, error => {
-    console.error("コメント取得エラー:", error);
+    alert("コメント取得失敗");
+    console.error(error);
   });
 }
 loadComments();
 
-// ===== クッキー共有（完全安定版）=====
+// ===== クッキー =====
 const cookieRef = db.collection("counts").doc("cookie");
 
-// クッキー追加（存在しなくてもOK）
+// クッキー追加
 function addCookie(){
   cookieRef.set({
     count: firebase.firestore.FieldValue.increment(1)
-  }, { merge: true });
+  }, { merge: true })
+  .catch(err => {
+    alert("クッキー失敗: " + err.message);
+    console.error(err);
+  });
 }
 
 // クッキー描画
@@ -155,7 +165,7 @@ function renderCookies(count){
   let box = document.getElementById("cookieVisual");
   box.innerHTML = "";
 
-  let max = Math.min(count, 100); // 表示制限
+  let max = Math.min(count, 100);
 
   for(let i=0; i<max; i++){
     let span = document.createElement("span");
@@ -171,7 +181,7 @@ function renderCookies(count){
 }
 
 // リアルタイム同期
-cookieRef.onSnapshot(doc=>{
+cookieRef.onSnapshot(doc => {
   let count = 0;
 
   if(doc.exists && doc.data().count){
@@ -182,9 +192,9 @@ cookieRef.onSnapshot(doc=>{
   renderCookies(count);
 
 }, error => {
-  console.error("クッキー取得エラー:", error);
+  alert("クッキー取得失敗");
+  console.error(error);
 });
-
 </script>
 
 </body>
