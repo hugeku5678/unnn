@@ -67,7 +67,7 @@ textarea {
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <script>
-// ===== Firebase設定（必ず自分のにする）=====
+// ===== Firebase設定 =====
 const firebaseConfig = {
   apiKey: "AIzaSyCAgrvrjt4jvKGi85l_FKZw_ErhaOEicq8",
   authDomain: "ikuze-15962.firebaseapp.com",
@@ -96,11 +96,10 @@ function postComment(){
   })
   .catch(err => {
     alert("投稿失敗: " + err.message);
-    console.error(err);
   });
 }
 
-// ===== コメント表示（リアルタイム）=====
+// ===== コメント表示 =====
 function loadComments(){
   db.collection("comments")
   .orderBy("time","desc")
@@ -119,7 +118,6 @@ function loadComments(){
       text.textContent = c.text;
       div.appendChild(text);
 
-      // ☺️コメントのみ通報
       if(c.text.includes("☺️")){
         let btn = document.createElement("button");
         btn.textContent = "追放 (" + (c.report || 0) + "/10)";
@@ -142,9 +140,6 @@ function loadComments(){
       list.appendChild(div);
     });
 
-  }, error => {
-    alert("コメント取得失敗");
-    console.error(error);
   });
 }
 loadComments();
@@ -152,38 +147,28 @@ loadComments();
 // ===== クッキー =====
 const cookieRef = db.collection("counts").doc("cookie");
 
-// クッキー追加
+// 追加
 function addCookie(){
   cookieRef.set({
     count: firebase.firestore.FieldValue.increment(1)
-  }, { merge: true })
-  .catch(err => {
-    alert("クッキー失敗: " + err.message);
-    console.error(err);
-  });
+  }, { merge: true });
 }
 
-// クッキー描画
+// 描画（軽量＆全表示対応）
 function renderCookies(count){
   let box = document.getElementById("cookieVisual");
-  box.innerHTML = "";
 
-  let max = Math.min(count, 100);
+  // 上限（ここ変えれば制御できる）
+  const LIMIT = 500;
 
-  for(let i=0; i<max; i++){
-    let span = document.createElement("span");
-    span.textContent = "🍪";
-    box.appendChild(span);
-  }
-
-  if(count > 100){
-    let more = document.createElement("div");
-    more.textContent = "他 " + (count - 100) + " 個...";
-    box.appendChild(more);
+  if(count <= LIMIT){
+    box.textContent = "🍪".repeat(count);
+  }else{
+    box.textContent = "🍪".repeat(LIMIT) + " 他 " + (count - LIMIT) + " 個";
   }
 }
 
-// リアルタイム同期
+// 同期
 cookieRef.onSnapshot(doc => {
   let count = 0;
 
@@ -193,10 +178,6 @@ cookieRef.onSnapshot(doc => {
 
   document.getElementById("cookieCount").textContent = count;
   renderCookies(count);
-
-}, error => {
-  alert("クッキー取得失敗");
-  console.error(error);
 });
 </script>
 
